@@ -1,0 +1,6 @@
+initroutines.py
+*.pyo
+*.pyc
+lcdinit.c
+lcdinit.py
+
