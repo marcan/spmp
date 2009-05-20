@@ -10,3 +10,5 @@ lcdinit.c: initroutines.py master.py classes.py
 initroutines.py : initroutines.txt process.py
 	python process.py $< $@
 
+clean:
+	rm -f lcdinit.py lcdinit.c initroutines.py
