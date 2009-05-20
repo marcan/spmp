@@ -4,3 +4,6 @@
 *.til
 *.id*
 *.in
+*.nam
+firmware.bin
+
