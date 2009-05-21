@@ -4,6 +4,8 @@ import serial, os, struct, time, struct
 from proxy import *
 import initlib
 
+import spmp305x as spmp
+
 uartdev = os.environ.get("SPMPDEVICE", "/dev/ttyUSB0")
 usbuart = serial.Serial(uartdev, 115200)
 

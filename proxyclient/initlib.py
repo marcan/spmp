@@ -31,23 +31,23 @@ LCD_FB_UNK = LCD_BASE + 0x19E
 def LCD_SetRegAddr(reg):
 	if debug:
 		print "ADDR 0x%x"%reg
-	proxy.write16(LCD_DATA, reg)
-	proxy.set8(LCD_DATA_DIR,LCD_OUT)
-	proxy.write8(LCD_CTRL, LCD_CS)
-	proxy.write8(LCD_CTRL, LCD_CS|LCD_WR)
-	proxy.write8(LCD_CTRL, LCD_CS)
-	proxy.write8(LCD_CTRL, LCD_CS|LCD_nRS)
-	proxy.clear8(LCD_DATA_DIR,LCD_OUT)
+	spmp.regs.LCD_DATA = reg
+	spmp.regs.LCD_DATA_DIR |= LCD_OUT
+	spmp.regs.LCD_CTRL = LCD_CS
+	spmp.regs.LCD_CTRL = LCD_CS | LCD_WR
+	spmp.regs.LCD_CTRL = LCD_CS
+	spmp.regs.LCD_CTRL = LCD_CS | LCD_nRS
+	spmp.regs.LCD_DATA_DIR &= ~LCD_OUT
 
 def LCD_WriteRegData(data):
 	if debug:
 		print "DATA 0x%x"%data
-	proxy.write16(LCD_DATA, data)
-	proxy.set8(LCD_DATA_DIR,LCD_OUT)
-	proxy.write8(LCD_CTRL, LCD_CS|LCD_nRS)
-	proxy.write8(LCD_CTRL, LCD_CS|LCD_nRS|LCD_WR)
-	proxy.write8(LCD_CTRL, LCD_CS|LCD_nRS)
-	proxy.clear8(LCD_DATA_DIR,LCD_OUT)
+	spmp.regs.LCD_DATA = data
+	spmp.regs.LCD_DATA_DIR |= LCD_OUT
+	spmp.regs.LCD_CTRL = LCD_CS | LCD_nRS
+	spmp.regs.LCD_CTRL = LCD_CS | LCD_nRS | LCD_WR
+	spmp.regs.LCD_CTRL = LCD_CS | LCD_nRS
+	spmp.regs.LCD_DATA_DIR &= ~LCD_OUT
 
 def LCD_WriteReg(reg, data):
 	LCD_SetRegAddr(reg)
