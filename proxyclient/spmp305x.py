@@ -14,16 +14,25 @@ SCRATCH = 0x24700000
 IO_BASE = 0x10000000
 
 class AbstractRegister(object):
-	def __init__(self, proxy, addr):
+	def __init__(self, proxy, addr, cache=False):
 		self.proxy = proxy
 		self.addr = addr | IO_BASE
+		self.cache = cache
+		self._cv = None
 		if self.addr % self.ALIGN:
 			raise Exception("Unaligned register")
 	
 	def _gr(self):
+		if self.cache and self._cv is not None:
+			return self._cv
+		self._cv = self.read()
 		return self.read()
 	def _gw(self, v):
-		self.write(v & self.MASK)
+		v &= self.MASK
+		if self.cache and self._cv == v:
+			return
+		self._cv = v
+		self.write(v)
 	val = property(_gr, _gw)
 	
 	def __ior__(self, v):
@@ -117,8 +126,8 @@ class U32(AbstractRegister):
 		self.proxy.write8(self.addr+2, (value >> 16) & 0xFF)
 		self.proxy.write8(self.addr+3, value >> 24)
 
-def _reg(cls, addr):
-	reg = cls(proxy, addr)
+def _reg(cls, addr, cache=False):
+	reg = cls(proxy, addr, cache)
 	def getreg(self):
 		return reg
 	def setreg(self,v):
@@ -134,23 +143,44 @@ class Regs(object):
 	LCD_DATA_DIR = _reg(R8, 0xA192)
 	LCD_RESET_REG = _reg(R8, 0xA1B1)
 	LCD_UPDATE = _reg(R8, 0xA00F)
-	LCD_SCREEN_WIDTH = _reg(R16, 0xA1A0)
-	LCD_SCREEN_HEIGHT = _reg(R16, 0xA1A2)
-	LCD_SCREEN_T1 = _reg(R8, 0xA19E)
-	LCD_SCREEN_T2 = _reg(R8, 0xA19F)
+	LCD_SCREEN_WIDTH = _reg(R16, 0xA1A0, True)
+	LCD_SCREEN_HEIGHT = _reg(R16, 0xA1A2, True)
+	LCD_SCREEN_T1 = _reg(R8, 0xA19E, True)
+	LCD_SCREEN_T2 = _reg(R8, 0xA19F, True)
 	
 	GFX_BLIT = _reg(R8, 0x702F)
-	GFX_FB_START = _reg(R32, 0x7130)
-	GFX_FB_END = _reg(R32, 0x7134)
-	GFX_FB_WIDTH = _reg(R16, 0x7138)
-	GFX_FB_HEIGHT = _reg(R16, 0x713A)
-	GFX_BLIT_FROM_X1 = _reg(U16, 0xA141)
-	GFX_BLIT_FROM_Y1 = _reg(U16, 0xA143)
-	GFX_BLIT_FROM_X2 = _reg(U16, 0xA145)
-	GFX_BLIT_FROM_Y2 = _reg(U16, 0xA147)
-	GFX_BLIT_TO_X1 = _reg(U16, 0xA149)
-	GFX_BLIT_TO_Y1 = _reg(U16, 0xA14b)
-	GFX_BLIT_TO_X2 = _reg(U16, 0xA14d)
-	GFX_BLIT_TO_Y2 = _reg(U16, 0xA14f)
+	GFX_FB_START = _reg(R32, 0x7130, True)
+	GFX_FB_END = _reg(R32, 0x7134, True)
+	GFX_FB_WIDTH = _reg(R16, 0x7138, True)
+	GFX_FB_HEIGHT = _reg(R16, 0x713A, True)
+	GFX_BLIT_FROM_X1 = _reg(U16, 0xA141, True)
+	GFX_BLIT_FROM_Y1 = _reg(U16, 0xA143, True)
+	GFX_BLIT_FROM_X2 = _reg(U16, 0xA145, True)
+	GFX_BLIT_FROM_Y2 = _reg(U16, 0xA147, True)
+	GFX_BLIT_TO_X1 = _reg(U16, 0xA149, True)
+	GFX_BLIT_TO_Y1 = _reg(U16, 0xA14b, True)
+	GFX_BLIT_TO_X2 = _reg(U16, 0xA14d, True)
+	GFX_BLIT_TO_Y2 = _reg(U16, 0xA14f, True)
+	
+	GFX_COPY_SRC = _reg(R32, 0x70a0, True) #>>1
+	GFX_COPY_SRC_WIDTH = _reg(R16, 0x70a4, True)
+	GFX_COPY_SRC_HEIGHT = _reg(R16, 0x70a6, True)
+	GFX_COPY_SRC_X = _reg(R16, 0x70a8, True)
+	GFX_COPY_SRC_Y = _reg(R16, 0x70aa, True)
+	GFX_COPY_SRC_COPY_WIDTH = _reg(R16, 0x70ac, True)
+	GFX_COPY_SRC_COPY_HEIGHT = _reg(R16, 0x70ae, True)
+	GFX_COPY_DST = _reg(R32, 0x70b0, True) #>>1
+	GFX_COPY_DST_WIDTH = _reg(R16, 0x70b4, True)
+	GFX_COPY_DST_HEIGHT = _reg(R16, 0x70b6, True)
+	GFX_COPY_DST_X = _reg(R16, 0x70b8, True)
+	GFX_COPY_DST_Y = _reg(R16, 0x70ba, True)
+	GFX_COPY_DST_COPY_WIDTH = _reg(R16, 0x70bc, True)
+	GFX_COPY_DST_COPY_HEIGHT = _reg(R16, 0x70be, True)
+
+	GFX_COPY_LSBS = _reg(R8, 0x7042, True) #000000DS (LSB from dest, src)
+	GFX_COPY_OP = _reg(R8, 0x703c, True)
+	GFX_COPY_START = _reg(R8, 0x703f)
+	GFX_COPY_BYTE_SIZE = _reg(R16, 0x7040, True)
+	GFX_COPY_FINISHED = _reg(R8, 0x7039)
 
 regs = Regs()

@@ -85,6 +85,8 @@ proxy.write32(0x10000008,0xFFFFFFFF)
 proxy.write32(0x10000110,0xFFFFFFFF)
 
 init = len(sys.argv)>1 and sys.argv[1] == 'init'
+upbig = len(sys.argv)>1 and sys.argv[1] == 'upbig'
+upsma = len(sys.argv)>1 and sys.argv[1] == 'upsma'
 
 proxy.set8(LCD_BASE, 1)
 regs.LCD_UPDATE = 1
@@ -153,6 +155,9 @@ def setup_blit(fb, disp, size):
 FBA = 0x24200000
 FBB = FBA + (LCD_WIDTH * LCD_HEIGHT * 2)
 
+TBIG = FBB
+TSMALL = FBB + (LCD_WIDTH * LCD_HEIGHT * 2)
+
 def setFB(a1, a2, size):
 	regs.GFX_FB_START = (a1 >> 1)
 	regs.GFX_FB_END = (a2 >> 1)
@@ -161,42 +166,195 @@ def setFB(a1, a2, size):
 	regs.LCD_UPDATE = 0x2
 
 proxy.memset16(FBA, 0xF800,  320*240*2)
-proxy.memset16(FBB, 0x001F,  320*240*2)
+#proxy.memset16(FBB, 0x001F,  320*240*2)
 
 cfb = False
 
-img = rgb2fb565("test.rgb")
 setFB(FBA, FBB, (240,320))
 setup_blit((0,0), (0,0), (240,320))
 regs.GFX_BLIT = 1
-time.sleep(0.2)
 
-for i in range(0,len(img),LCD_WIDTH*2):
-	iface.writemem(FBA+i, img[i:i+LCD_WIDTH*2])
-	regs.GFX_BLIT = 1
+if upbig:
+	img = rgb2fb565("test.rgb")
+	for i in range(0,len(img),LCD_WIDTH*2):
+		iface.writemem(TBIG+i, img[i:i+LCD_WIDTH*2])
+
+if upsma:
+	img = rgb2fb565("test_small.rgb")
+	for i in range(0,len(img),LCD_WIDTH):
+		iface.writemem(TSMALL+i, img[i:i+LCD_WIDTH])
 
 regs.GFX_BLIT = 1
-time.sleep(1)
 
-bw = 48
-bh = 48
+def ballbounce():
+	bw = 48
+	bh = 48
+	
+	bx = 0
+	by = 0
+	
+	dbx = 2
+	dby = 2
+	
+	while True:
+		setup_blit((bx,by), (bx,by), (bw,bh))
+		regs.GFX_BLIT = 1
+		bx += dbx
+		by += dby
+		if by+dby >= (FB_HEIGHT - bh):
+			dby = -2
+		if by+dby <= 0:
+			dby = 2
+		if bx+dbx >= (FB_WIDTH - bw - 1):
+			dbx = -2
+		if bx+dbx <= 0:
+			dbx = 2
 
-bx = 0
-by = 0
+def gfx_memcpy(dst, src, size):
+	cpmax = 65535
+	while size > cpmax:
+		gfx_memcpy(dst, src, cpmax)
+		dst += cpmax
+		src += cpmax
+		size -= cpmax
+	if size:
+		regs.GFX_COPY_OP = 0
+		regs.GFX_COPY_OP = 6
+		regs.GFX_COPY_SRC = src >> 1
+		regs.GFX_COPY_DST = dst >> 1
+		regs.GFX_COPY_LSBS = (src & 1) | ((dst & 1) << 1)
+		regs.GFX_COPY_BYTE_SIZE = size
+		regs.GFX_COPY_START = 1
+		while regs.GFX_COPY_FINISHED.val == 0:
+			pass
+print "Doing"
 
-dbx = 2
-dby = 2
+def cp2(src, a, b, dst, c, d, e=None, f=None):
+	# some weird copy... does strange stuff
+	if src & 1:
+		raise ValueError("Source must be 2-byte aligned")
+	if dst & 1:
+		raise ValueError("Destination must be 2-byte aligned")
+	regs.GFX_COPY_OP = 0
+	regs.GFX_COPY_OP = 1
 
-while True:
-	setup_blit((bx,by), (bx,by), (bw,bh))
-	regs.GFX_BLIT = 1
-	bx += dbx
-	by += dby
-	if by+dby >= (FB_HEIGHT - bh):
-		dby = -2
-	if by+dby <= 0:
-		dby = 2
-	if bx+dbx >= (FB_WIDTH - bw - 1):
-		dbx = -2
-	if bx+dbx <= 0:
-		dbx = 2
+	proxy.write16(IO_BASE + 0x703a, 0xFFFF)
+	proxy.write8(IO_BASE + 0x7038, 2)
+	
+	regs.GFX_COPY_SRC = src>>1
+	proxy.write16(IO_BASE + 0x70a4, a)
+	proxy.write16(IO_BASE + 0x70a6, b)
+	
+	regs.GFX_COPY_DEST = dst>>1
+	
+	e = e or c
+	f = f or d
+	
+	proxy.write16(IO_BASE + 0x70b4, c)
+	proxy.write16(IO_BASE + 0x70b6, d)
+	proxy.write16(IO_BASE + 0x70bc, e)
+	proxy.write16(IO_BASE + 0x70be, f)
+	
+	regs.GFX_COPY_START = 1
+	while regs.GFX_COPY_FINISHED.val == 0:
+		pass
+
+#gfx_memcpy(FBA, FBB, LCD_WIDTH * LCD_HEIGHT * 2)
+
+#cp2(TSMALL, 120, 160, FBA+8, 240, 320, 120, 160)
+
+def gfx_blit(src, ssize, spos, dst, dsize, dpos, csize, autoalign=False):
+	if src & 1:
+		raise ValueError("Source must be 2-byte aligned")
+	if dst & 1:
+		raise ValueError("Destination must be 2-byte aligned")
+	# note: ssize and dsize heights are ignored except for the checks
+
+	cw, ch = csize
+
+	cw = min(cw, dsize[0] - dpos[0])
+	ch = min(ch, dsize[1] - dpos[1])
+	cw = min(cw, ssize[0] - spos[0])
+	ch = min(ch, ssize[1] - spos[1])
+
+	if ssize[0] % 8:
+		raise ValueError("Source width must be a multiple of 8")
+	if dsize[0] % 8:
+		raise ValueError("Dest width must be a multiple of 8")
+	if autoalign:
+		cw &= ~7
+	else:
+		if cw % 8:
+			raise ValueError("Copy width must be a multiple of 8")
+	
+	
+	regs.GFX_COPY_OP = 0
+	regs.GFX_COPY_OP = 3
+	
+	# do the math FOR the engine because it's broken
+	regs.GFX_COPY_SRC = (src>>1) + spos[0] + ssize[0] * spos[1]
+	regs.GFX_COPY_DST = (dst>>1) + dpos[0] + dsize[0] * dpos[1]
+	
+	regs.GFX_COPY_SRC_WIDTH = ssize[0]
+	regs.GFX_COPY_DST_WIDTH = dsize[0]
+	
+	regs.GFX_COPY_DST_COPY_WIDTH = cw
+	regs.GFX_COPY_DST_COPY_HEIGHT = ch
+	
+	# these registers are useless and redundant and don't seem to matter
+	regs.GFX_COPY_SRC_HEIGHT = 0
+	regs.GFX_COPY_DST_HEIGHT = 0
+	regs.GFX_COPY_SRC_COPY_WIDTH = 0
+	regs.GFX_COPY_SRC_COPY_HEIGHT = 0
+	
+	# these are redundant after adding them directly to the addresses
+	# bonus: non multiples of 8 for X now work
+	regs.GFX_COPY_SRC_X = 0
+	regs.GFX_COPY_SRC_Y = 0
+	regs.GFX_COPY_DST_X = 0
+	regs.GFX_COPY_DST_Y = 0
+
+	regs.GFX_COPY_START = 1
+	while regs.GFX_COPY_FINISHED.val == 0:
+		pass
+
+#gfx_blit(TBIG, (240,320), (0,0), FBA, (240,320), (11,11), (240,320), autoalign=True)
+
+def trailbounce():
+	bw = 16
+	bh = 16
+	
+	bx = 0
+	by = 0
+	
+	spd = 2
+	
+	dbx = spd
+	dby = spd
+
+	while True:
+		gfx_blit(TBIG, (240,320), (bx,by), FBA, (240,320), (bx,by), (bw, bh))
+		regs.GFX_BLIT = 1
+
+		bx += dbx
+		by += dby
+		if by+dby > (FB_HEIGHT - bh):
+			dby = -spd
+		if by+dby < 0:
+			dby = spd
+		if bx+dbx > (FB_WIDTH - bw):
+			dbx = -spd
+		if bx+dbx < 0:
+			dbx = spd
+		
+		if (bx == 0 or bx == (FB_WIDTH - bw)) and (by == 0 or by == (FB_HEIGHT - bh)):
+			gfx_blit(TBIG, (240,320), (bx,by), FBA, (240,320), (bx,by), (bw, bh))
+			regs.GFX_BLIT = 1
+			time.sleep(5)
+			proxy.memset16(FBA, 0xF800,  320*240*2)
+
+trailbounce()
+
+print "Done"
+regs.GFX_BLIT = 1
+
