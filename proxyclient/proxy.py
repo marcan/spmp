@@ -19,9 +19,9 @@ def pad(s,c,l):
 		s += c * (l-len(s))
 	return s
 
-def chexdump(s):
+def chexdump(s,st=0):
 	for i in range(0,len(s),16):
-		print "%08x  %s  %s  |%s|"%(i,pad(hexdump(s[i:i+8],' ')," ",23),pad(hexdump(s[i+8:i+16],' ')," ",23),pad(ascii(s[i:i+16])," ",16))
+		print "%08x  %s  %s  |%s|"%(i+st,pad(hexdump(s[i:i+8],' ')," ",23),pad(hexdump(s[i+8:i+16],' ')," ",23),pad(ascii(s[i:i+16])," ",16))
 
 
 class UartError(RuntimeError):
