@@ -84,9 +84,10 @@ regs.LCD_DATA_EXT = 0
 proxy.write32(0x10000008,0xFFFFFFFF)
 proxy.write32(0x10000110,0xFFFFFFFF)
 
-init = len(sys.argv)>1 and sys.argv[1] == 'init'
-upbig = len(sys.argv)>1 and sys.argv[1] == 'upbig'
-upsma = len(sys.argv)>1 and sys.argv[1] == 'upsma'
+init = 'init' in sys.argv[1:]
+upbig = 'upbig' in sys.argv[1:]
+uptest = 'uptest' in sys.argv[1:]
+upsma = 'upsma' in sys.argv[1:]
 
 proxy.set8(LCD_BASE, 1)
 regs.LCD_UPDATE = 1
@@ -139,14 +140,14 @@ def setup_blit(fb, disp, size):
 	fx2,fy2 = fx1 + w - 1, fy1 + h - 1
 	tx1,ty1 = disp
 	tx2,ty2 = tx1 + w - 1, ty1 + h - 1
-	#regs.GFX_BLIT_FROM_X1 = fx1
-	#regs.GFX_BLIT_FROM_X2 = fx2
-	#regs.GFX_BLIT_FROM_Y1 = fy1
-	#regs.GFX_BLIT_FROM_Y2 = fy2
-	#regs.GFX_BLIT_TO_X1 = tx1
-	#regs.GFX_BLIT_TO_X2 = tx2
-	#regs.GFX_BLIT_TO_Y1 = ty1
-	#regs.GFX_BLIT_TO_Y2 = ty2
+	#regs.GFX_DRAW_START_FROM_X1 = fx1
+	#regs.GFX_DRAW_START_FROM_X2 = fx2
+	#regs.GFX_DRAW_START_FROM_Y1 = fy1
+	#regs.GFX_DRAW_START_FROM_Y2 = fy2
+	#regs.GFX_DRAW_START_TO_X1 = tx1
+	#regs.GFX_DRAW_START_TO_X2 = tx2
+	#regs.GFX_DRAW_START_TO_Y1 = ty1
+	#regs.GFX_DRAW_START_TO_Y2 = ty2
 	buf = struct.pack("<HHHHHHHH", fx1, fy1, fx2, fy2, tx1, ty1, tx2, ty2)
 	iface.writemem(0x1000A141, buf)
 	regs.LCD_UPDATE = 0x3
@@ -158,33 +159,49 @@ FBB = FBA + (LCD_WIDTH * LCD_HEIGHT * 2)
 TBIG = FBB
 TSMALL = FBB + (LCD_WIDTH * LCD_HEIGHT * 2)
 
+
+def draw():
+	print "Drawing...",
+	sys.stdout.flush()
+	regs.GFX_DRAW_START = 1
+	while not (regs.GFX_DRAW_STATUS.val & 2):
+		pass
+	print "Done"
+
 def setFB(a1, a2, size):
-	regs.GFX_FB_START = (a1 >> 1)
-	regs.GFX_FB_END = (a2 >> 1)
-	regs.GFX_FB_WIDTH = size[0]
-	regs.GFX_FB_HEIGHT = size[1]
+	regs.GFX_DRAW_SRC = (a1 >> 1)
+	regs.GFX_DRAW_SRC2 = (a2 >> 1)
+	regs.GFX_DRAW_WIDTH = size[0]
+	regs.GFX_DRAW_HEIGHT = size[1]
 	regs.LCD_UPDATE = 0x2
 
 proxy.memset16(FBA, 0xF800,  320*240*2)
 #proxy.memset16(FBB, 0x001F,  320*240*2)
 
+setup_blit((0,0), (0,0), (240,320))
+
 cfb = False
 
-setFB(FBA, FBB, (240,320))
-setup_blit((0,0), (0,0), (240,320))
-regs.GFX_BLIT = 1
-
 if upbig:
+	setFB(FBB, FBA, (240,320))
 	img = rgb2fb565("test.rgb")
 	for i in range(0,len(img),LCD_WIDTH*2):
 		iface.writemem(TBIG+i, img[i:i+LCD_WIDTH*2])
+		draw()
+elif uptest:
+	setFB(FBB, FBA, (240,320))
+	img = rgb2fb565("rgbtest.rgb")
+	for i in range(0,len(img),LCD_WIDTH*2):
+		iface.writemem(TBIG+i, img[i:i+LCD_WIDTH*2])
+		draw()
 
 if upsma:
 	img = rgb2fb565("test_small.rgb")
 	for i in range(0,len(img),LCD_WIDTH):
 		iface.writemem(TSMALL+i, img[i:i+LCD_WIDTH])
 
-regs.GFX_BLIT = 1
+setFB(FBA, FBA, (240,320))
+draw()
 
 def ballbounce():
 	bw = 48
@@ -198,7 +215,7 @@ def ballbounce():
 	
 	while True:
 		setup_blit((bx,by), (bx,by), (bw,bh))
-		regs.GFX_BLIT = 1
+		regs.GFX_DRAW_START = 1
 		bx += dbx
 		by += dby
 		if by+dby >= (FB_HEIGHT - bh):
@@ -264,6 +281,7 @@ def cp2(src, a, b, dst, c, d, e=None, f=None):
 #cp2(TSMALL, 120, 160, FBA+8, 240, 320, 120, 160)
 
 def gfx_blit(src, ssize, spos, dst, dsize, dpos, csize, autoalign=False):
+	print "blit %08x %r %r %08x %r %r %r"%(src, ssize, spos, dst, dsize, dpos, csize)
 	if src & 1:
 		raise ValueError("Source must be 2-byte aligned")
 	if dst & 1:
@@ -302,10 +320,10 @@ def gfx_blit(src, ssize, spos, dst, dsize, dpos, csize, autoalign=False):
 	regs.GFX_COPY_DST_COPY_HEIGHT = ch
 	
 	# these registers are useless and redundant and don't seem to matter
-	regs.GFX_COPY_SRC_HEIGHT = 0
-	regs.GFX_COPY_DST_HEIGHT = 0
-	regs.GFX_COPY_SRC_COPY_WIDTH = 0
-	regs.GFX_COPY_SRC_COPY_HEIGHT = 0
+	regs.GFX_COPY_SRC_HEIGHT = ssize[1]
+	regs.GFX_COPY_DST_HEIGHT = ssize[1]
+	regs.GFX_COPY_SRC_COPY_WIDTH = csize[0]
+	regs.GFX_COPY_SRC_COPY_HEIGHT =  csize[1]
 	
 	# these are redundant after adding them directly to the addresses
 	# bonus: non multiples of 8 for X now work
@@ -334,7 +352,7 @@ def trailbounce():
 
 	while True:
 		gfx_blit(TBIG, (240,320), (bx,by), FBA, (240,320), (bx,by), (bw, bh))
-		regs.GFX_BLIT = 1
+		regs.GFX_DRAW_START = 1
 
 		bx += dbx
 		by += dby
@@ -349,12 +367,34 @@ def trailbounce():
 		
 		if (bx == 0 or bx == (FB_WIDTH - bw)) and (by == 0 or by == (FB_HEIGHT - bh)):
 			gfx_blit(TBIG, (240,320), (bx,by), FBA, (240,320), (bx,by), (bw, bh))
-			regs.GFX_BLIT = 1
-			time.sleep(5)
+			regs.GFX_DRAW_START = 1
+			time.sleep(0)
 			proxy.memset16(FBA, 0xF800,  320*240*2)
 
-trailbounce()
+import random
+
+
+def randomize(addr, l):
+	for i in range(l):
+		proxy.write8(addr+i, random.randint(0,255))
+
+def rset(addr, v):
+	for i,c in enumerate(v):
+		proxy.write8(addr+i, c)
+
+for i in range(127,256):
+	#randomize(0x10007140, 1)
+	#rset(0x10007140, [14, 13, 11, 9, 8, 7, 6, 5, 4, 10, 12, 1, 0, 0, 1, 3])
+	#rset(0x10007140, [14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 3])
+	proxy.write8(0x10007049, 0)
+	proxy.memset16(FBA, 0xFFFF,  320*240*2)
+	gfx_blit(TBIG, (240,320), (0,0), FBA, (240,320), (0,0), (240, 320))
+	draw()
+
+
+
+#trailbounce()
 
 print "Done"
-regs.GFX_BLIT = 1
+regs.GFX_DRAW_START = 1
 
