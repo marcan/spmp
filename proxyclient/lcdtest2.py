@@ -427,37 +427,37 @@ def gfx_blit(src, ssize, spos, dst, dsize, dpos, csize, op=3, autoalign=False):
 
 BLEND_SRC_RGB565 = 0
 BLEND_SRC_ARGB1555 = 8
-BLEND_SRC_ARGB4444 = 16
+BLEND_SRC_RGB444 = 16
 
 def gfx_set_blend_src_fmt(fmt):
 	regs.GFX_BLEND_FLAGS = 1 | 2 | 4 | fmt
 
 def gfx_set_blend_dmask(r, g, b):
 	fmt = regs.GFX_BLEND_FLAGS.val & 24
-	if fmt == 0:
+	if fmt == BLEND_SRC_RGB565:
 		regs.GFX_BLEND_SRC_DMASK_R = r & 0xf8
 		regs.GFX_BLEND_SRC_DMASK_G = g & 0xfc
 		regs.GFX_BLEND_SRC_DMASK_B = b & 0xf8
-	elif fmt == 8:
+	elif fmt == BLEND_SRC_ARGB1555:
 		regs.GFX_BLEND_SRC_DMASK_R = r & 0xf8
 		regs.GFX_BLEND_SRC_DMASK_G = g & 0xf8
 		regs.GFX_BLEND_SRC_DMASK_B = b & 0xf8
-	elif fmt == 16:
+	elif fmt == BLEND_SRC_RGB444:
 		regs.GFX_BLEND_SRC_DMASK_R = (r & 0xf0) | (r >> 4)
 		regs.GFX_BLEND_SRC_DMASK_G = (g & 0xf0) | (g >> 4)
 		regs.GFX_BLEND_SRC_DMASK_B = (b & 0xf0) | (b >> 4)
 
 def gfx_set_blend_smask(r, g, b):
 	fmt = regs.GFX_BLEND_FLAGS.val & 24
-	if fmt == 0:
+	if fmt == BLEND_SRC_RGB565:
 		regs.GFX_BLEND_SRC_SMASK_R = r & 0xf8
 		regs.GFX_BLEND_SRC_SMASK_G = g & 0xfc
 		regs.GFX_BLEND_SRC_SMASK_B = b & 0xf8
-	elif fmt == 8:
+	elif fmt == BLEND_SRC_ARGB1555:
 		regs.GFX_BLEND_SRC_SMASK_R = r & 0xf8
 		regs.GFX_BLEND_SRC_SMASK_G = g & 0xf8
 		regs.GFX_BLEND_SRC_SMASK_B = b & 0xf8
-	elif fmt == 16:
+	elif fmt == BLEND_SRC_RGB444:
 		regs.GFX_BLEND_SRC_SMASK_R = (r & 0xf0) | (b >> 4)
 		regs.GFX_BLEND_SRC_SMASK_G = (g & 0xf0) | (b >> 4)
 		regs.GFX_BLEND_SRC_SMASK_B = (b & 0xf0) | (b >> 4)
@@ -669,17 +669,15 @@ d = struct.pack(">IIII", 0x00000000, 0x00000000, 0x00000000, 0x00000000)
 
 iface.writemem(FBD, d * 240)
 
-gfx_set_blend_src_fmt(BLEND_SRC_ARGB4444)
+gfx_set_blend_src_fmt(BLEND_SRC_ARGB1555)
 
 for r,g,b in blends:
-	gfx_set_blend_dmask(r,g,b)
+	gfx_set_blend_dmask	(r,g,b)
 	gfx_blend(TBIGYUV, FBC, FBA, (240,320), BLEND_MODE_MASK_ALPHA, 0)
 	draw()
 	time.sleep(0.2)
 
-gfx_set_blend_smask(255,255,255)
-
-proxy.memcpy32(FBC, TTEST2, 320*240*2)
+gfx_set_blend_smask(0,254,254)
 
 for i in range(0,0x21):
 	gfx_blend(TBIGYUV, FBC, FBA, (240,320), BLEND_MODE_MASK_ALPHA, i)
