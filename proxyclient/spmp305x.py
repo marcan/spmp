@@ -6,6 +6,7 @@ import initlib
 
 uartdev = os.environ.get("SPMPDEVICE", "/dev/ttyUSB0")
 uart = serial.Serial(uartdev, 115200)
+uart.write("\0"*256)
 
 iface = UartInterface(uart, debug=False)
 proxy = SPMPProxy(iface, debug=False)
@@ -164,15 +165,32 @@ class Regs(object):
 	GFX_COPY_START = _reg(R8, 0x703f)
 	GFX_COPY_BYTE_SIZE = _reg(R16, 0x7040, True)
 	GFX_COPY_LSBS = _reg(R8, 0x7042, True) #000000DS (LSB from dest, src)
+		
+	GFX_BLEND_OUT_ADDR = _reg(R32, 0x7060, True)
+	GFX_BLEND_FLAGS = _reg(R8, 0x7064, True)
+	GFX_BLEND_MODE = _reg(R8, 0x7065, True)
+	GFX_BLEND_FACTOR = _reg(R8, 0x7066, True)
+	GFX_BLEND_SRC_DMASK_R = _reg(R8, 0x7067, True)
+	GFX_BLEND_SRC_DMASK_G = _reg(R8, 0x7068, True)
+	GFX_BLEND_SRC_DMASK_B = _reg(R8, 0x7069, True)
+	GFX_BLEND_SRC_SMASK_R = _reg(R8, 0x706a, True)
+	GFX_BLEND_SRC_SMASK_G = _reg(R8, 0x706b, True)
+	GFX_BLEND_SRC_SMASK_B = _reg(R8, 0x706c, True)
+	GFX_BLEND_DST_THRH_R = _reg(R8, 0x706d, True)
+	GFX_BLEND_DST_THRH_G = _reg(R8, 0x706e, True)
+	GFX_BLEND_DST_THRH_B = _reg(R8, 0x706f, True)
+	GFX_BLEND_DST_THRL_R = _reg(R8, 0x7070, True)
+	GFX_BLEND_DST_THRL_G = _reg(R8, 0x7071, True)
+	GFX_BLEND_DST_THRL_B = _reg(R8, 0x7072, True)
 	
-	GFX_COPY_SRC = _reg(R32, 0x70a0, True) #>>1
+	GFX_COPY_SRC_ADDR = _reg(R32, 0x70a0, True) #>>1
 	GFX_COPY_SRC_WIDTH = _reg(R16, 0x70a4, True)
 	GFX_COPY_SRC_HEIGHT = _reg(R16, 0x70a6, True)
 	GFX_COPY_SRC_X = _reg(R16, 0x70a8, True)
 	GFX_COPY_SRC_Y = _reg(R16, 0x70aa, True)
 	GFX_COPY_SRC_COPY_WIDTH = _reg(R16, 0x70ac, True)
 	GFX_COPY_SRC_COPY_HEIGHT = _reg(R16, 0x70ae, True)
-	GFX_COPY_DST = _reg(R32, 0x70b0, True) #>>1
+	GFX_COPY_DST_ADDR = _reg(R32, 0x70b0, True) #>>1
 	GFX_COPY_DST_WIDTH = _reg(R16, 0x70b4, True)
 	GFX_COPY_DST_HEIGHT = _reg(R16, 0x70b6, True)
 	GFX_COPY_DST_X = _reg(R16, 0x70b8, True)
