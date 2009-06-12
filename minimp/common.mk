@@ -4,9 +4,9 @@ endif
 
 PREFIX = $(SPMPDEV)/bin/armel-eabi-
 
-CFLAGS += -mcpu=arm926ej-s
+CFLAGS += -march=armv5te
 CFLAGS += -fomit-frame-pointer -ffunction-sections
-CFLAGS += -Wall -Wextra -Os -pipe
+CFLAGS += -Wall -Wextra -O3 -pipe
 ASFLAGS =
 LDFLAGS = -ffreestanding -n -nostartfiles -nodefaultlibs -Wl,-gc-sections
 
