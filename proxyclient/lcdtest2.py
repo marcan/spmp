@@ -662,7 +662,7 @@ blends = [
 	(127,255,127)
 ]
 
-proxy.memcpy32(FBC, TTEST2B, 320*240*2)
+proxy.memcpy32(FBC, TTEST2, 320*240*2)
 proxy.memset32(FBD, 0x00000000, 320*240*2)
 
 d = struct.pack(">IIII", 0x00000000, 0x00000000, 0x00000000, 0x00000000)
