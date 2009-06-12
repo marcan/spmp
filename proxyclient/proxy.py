@@ -56,6 +56,7 @@ class UartInterface:
 		self.dev.timeout = 0
 		self.dev.flushOutput()
 		self.dev.flushInput()
+		self.pted = False
 		d = self.dev.read(1)
 		while d != "":
 			d = self.dev.read(1)
@@ -86,23 +87,27 @@ class UartInterface:
 		if self.debug:
 			print "<<", hexdump(command)
 		self.dev.write(command)
-
+	def unkhandler(self, s):
+		for c in s:
+			if not self.pted:
+				sys.stdout.write("TTY> ")
+				self.pted = True
+			if c == "\n":
+				self.pted = False
+			sys.stdout.write(c)
 	def reply(self, cmd):
 		while True:
 			reply = self.readfull(1)
 			if reply != "\xff":
-				if self.debug:
-					print ">>", hexdump(reply[-1]), repr(reply[-1])
+				self.unkhandler(reply)
 				continue
 			reply += self.readfull(1)
 			if reply != "\xff\x55":
-				if self.debug:
-					print ">>", hexdump(reply[-1])
+				self.unkhandler(reply)
 				continue
 			reply += self.readfull(1)
 			if reply != "\xff\x55\xaa":
-				if self.debug:
-					print ">>", hexdump(reply[-1])
+				self.unkhandler(reply)
 				continue
 			reply += self.readfull(21)
 			if self.debug:
