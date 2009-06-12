@@ -26,8 +26,8 @@ u32 _main(void)
 
 	debug_printf("Initializing exceptions...\n");
 	exception_initialize();
-	//debug_printf("Configuring caches and MMU...\n");
-	//mem_initialize();
+	debug_printf("Configuring caches and MMU...\n");
+	mem_initialize();
 
 	//irq_initialize();
 	//debug_printf("Interrupts initialized\n");
@@ -39,8 +39,8 @@ u32 _main(void)
 
 	//debug_printf("Shutting down interrupts...\n");
 	//irq_shutdown();
-	//debug_printf("Shutting down caches and MMU...\n");
-	//mem_shutdown();
+	debug_printf("Shutting down caches and MMU...\n");
+	mem_shutdown();
 	
 	while(1);
 
