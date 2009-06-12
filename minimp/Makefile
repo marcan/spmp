@@ -5,8 +5,8 @@ LIBS = -lgcc
 TARGET = miniboot.elf
 TARGET_BIN = miniboot.bin
 OBJS = start.o main.o vsprintf.o string.o uart.o memory.o memory_asm.o \
-	utils_asm.o utils.o panic.o proxy.o uartproxy.o\
-	irq.o irq_asm.o exception.o exception_asm.o ldhack.o
+	utils_asm.o utils.o panic.o proxy.o uartproxy.o gfx.o gfx_asm.o\
+	irq.o irq_asm.o exception.o exception_asm.o ldhack.o render.o
 
 all: $(TARGET_BIN)
 

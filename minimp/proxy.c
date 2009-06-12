@@ -2,6 +2,8 @@
 #include "utils.h"
 #include "memory.h"
 #include "proxy.h"
+#include "gfx.h"
+#include "render.h"
 
 int proxy_process(ProxyRequest *request, ProxyReply *reply)
 {
@@ -51,6 +53,13 @@ int proxy_process(ProxyRequest *request, ProxyReply *reply)
 		case P_DC_INVALRANGE: dc_invalidaterange((void*)request->args[0], request->args[1]); break;
 		case P_DC_FLUSHALL: dc_flushall(); break;
 		case P_IC_INVALALL: ic_invalidateall(); break;
+		
+		case P_GFX_INIT: gfx_init(); break;
+		case P_GFX_SENDFIFO: gfx_sendfifobuf((void*)request->args[0], request->args[1]); break;
+		
+		case P_RENDER_BUNNY: render_bunny((void*)request->args[0]); break;
+		case P_SET_RENDER_STYLE: set_render_style(request->args[0], request->args[1] | ((u64)request->args[2]<<32)); break;
+		case P_SET_RENDER_COLORS: set_render_colors(request->args[0], request->args[1]); break;
 
 		default:
 			reply->status = S_BADCMD;

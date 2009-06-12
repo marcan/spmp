@@ -215,14 +215,13 @@ class SPMPProxy:
 	P_DC_INVALRANGE = 0x301
 	P_DC_FLUSHALL = 0x302
 	P_IC_INVALALL = 0x303
-	P_MAGIC_BULLSHIT = 0x304
-	P_AHB_MEMFLUSH = 0x305
-	P_MEM_PROTECT = 0x306
 
-	P_NAND_READPAGE = 0x400
-	P_NAND_WRITEPAGE = 0x401
-	P_NAND_ERASEBLOCK = 0x402
-	P_NAND_GETSTATUS = 0x403
+	P_GFX_INIT = 0x400
+	P_GFX_SENDFIFO = 0x401
+	
+	P_RENDER_BUNNY = 0x500
+	P_SET_RENDER_STYLE = 0x501
+	P_SET_RENDER_COLORS = 0x502
 
 	def __init__(self, iface, debug=False):
 		self.debug = debug
@@ -342,21 +341,18 @@ class SPMPProxy:
 		self.request(self.P_DC_FLUSHALL)
 	def ic_invalall(self):
 		self.request(self.P_IC_INVALALL)
-	def magic_bullshit(self, n):
-		self.request(self.P_MAGIC_BULLSHIT, n)
-	def ahb_memflush(self, n):
-		self.request(self.P_AHB_MEMFLUSH, n)
-	def mem_protect(self, start, end):
-		self.request(self.P_MEM_PROTECT, start, end)
-
-	def nand_readpage(self, page, data_addr, ecc_addr):
-		self.request(self.P_NAND_READPAGE, page, data_addr, ecc_addr)
-	def nand_writepage(self, page, data_addr, ecc_addr):
-		self.request(self.P_NAND_WRITEPAGE, page, data_addr, ecc_addr)
-	def nand_eraseblock(self, block):
-		self.request(self.P_NAND_ERASEBLOCK, block)
-	def nand_getstatus(self):
-		return self.request(self.P_NAND_GETSTATUS)
+	
+	def gfx_init(self,):
+		self.request(self.P_GFX_INIT)
+	def gfx_sendfifo(self, start, words):
+		self.request(self.P_GFX_SENDFIFO, start, words)
+	
+	def render_bunny(self, matrix):
+		self.request(self.P_RENDER_BUNNY, matrix)
+	def set_render_style(self, length, style):
+		self.request(self.P_SET_RENDER_STYLE, length, style & 0xFFFFFFFF, style>>32)
+	def set_render_colors(self, fg, bg):
+		self.request(self.P_SET_RENDER_COLORS, fg, bg)
 
 if __name__ == "__main__":
 	import serial
