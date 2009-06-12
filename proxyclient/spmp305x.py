@@ -22,7 +22,7 @@ class AbstractRegister(object):
 		self._cv = None
 		if self.addr % self.ALIGN:
 			raise Exception("Unaligned register")
-	
+
 	def _gr(self):
 		if self.cache and self._cv is not None:
 			return self._cv
@@ -35,14 +35,14 @@ class AbstractRegister(object):
 		self._cv = v
 		self.write(v)
 	val = property(_gr, _gw)
-	
+
 	def __ior__(self, v):
 		self.set(v & self.MASK)
 		return self
 	def __iand__(self, v):
 		self.clear((v & self.MASK) ^ self.MASK)
 		return self
-	
+
 	def set(self, v):
 		self.val |= v
 	def clear(self, v):
@@ -52,7 +52,7 @@ class AbstractRegister(object):
 		v &= clear ^ self.MASK
 		v |= set
 		self.val = v
-	
+
 class R8(AbstractRegister):
 	MASK = 0xFF
 	ALIGN = 1
@@ -138,17 +138,9 @@ def _reg(cls, addr, cache=False):
 	return property(getreg,setreg)
 
 class Regs(object):
-	LCD_DATA = _reg(R16, 0xA196)
-	LCD_DATA_EXT = _reg(R8, 0xA0E4)
-	LCD_CTRL = _reg(R8, 0xA195)
-	LCD_DATA_DIR = _reg(R8, 0xA192)
-	LCD_RESET_REG = _reg(R8, 0xA1B1)
 	LCD_UPDATE = _reg(R8, 0xA00F)
-	LCD_SCREEN_WIDTH = _reg(R16, 0xA1A0, True)
-	LCD_SCREEN_HEIGHT = _reg(R16, 0xA1A2, True)
-	LCD_SCREEN_T1 = _reg(R8, 0xA19E, True)
-	LCD_SCREEN_T2 = _reg(R8, 0xA19F, True)
-	
+	LCD_DATA_EXT = _reg(R8, 0xA0E4)
+
 	GFX_DRAW_FROM_X1 = _reg(U16, 0xA141, True)
 	GFX_DRWA_FROM_Y1 = _reg(U16, 0xA143, True)
 	GFX_DRAW_FROM_X2 = _reg(U16, 0xA145, True)
@@ -157,7 +149,17 @@ class Regs(object):
 	GFX_DRAW_TO_Y1 = _reg(U16, 0xA14b, True)
 	GFX_DRAW_TO_X2 = _reg(U16, 0xA14d, True)
 	GFX_DRAW_TO_Y2 = _reg(U16, 0xA14f, True)
-	
+
+	LCD_DATA_DIR = _reg(R8, 0xA192)
+	LCD_CTRL = _reg(R8, 0xA195)
+	LCD_DATA = _reg(R16, 0xA196)
+	LCD_SCREEN_T1 = _reg(R8, 0xA19E, True)
+	LCD_SCREEN_T2 = _reg(R8, 0xA19F, True)
+	LCD_SCREEN_WIDTH = _reg(R16, 0xA1A0, True)
+	LCD_SCREEN_HEIGHT = _reg(R16, 0xA1A2, True)
+	LCD_RESET_REG = _reg(R8, 0xA1B1)
+
+
 	GFX_DRAW_STATUS = _reg(R8, 0x702E)
 	GFX_DRAW_START = _reg(R8, 0x702F)
 	GFX_COPY_FINISHED = _reg(R8, 0x7039)
@@ -165,7 +167,7 @@ class Regs(object):
 	GFX_COPY_START = _reg(R8, 0x703f)
 	GFX_COPY_BYTE_SIZE = _reg(R16, 0x7040, True)
 	GFX_COPY_LSBS = _reg(R8, 0x7042, True) #000000DS (LSB from dest, src)
-		
+
 	GFX_BLEND_OUT_ADDR = _reg(R32, 0x7060, True)
 	GFX_BLEND_FLAGS = _reg(R8, 0x7064, True)
 	GFX_BLEND_MODE = _reg(R8, 0x7065, True)
@@ -182,7 +184,7 @@ class Regs(object):
 	GFX_BLEND_DST_THRL_R = _reg(R8, 0x7070, True)
 	GFX_BLEND_DST_THRL_G = _reg(R8, 0x7071, True)
 	GFX_BLEND_DST_THRL_B = _reg(R8, 0x7072, True)
-	
+
 	GFX_COPY_SRC_ADDR = _reg(R32, 0x70a0, True) #>>1
 	GFX_COPY_SRC_WIDTH = _reg(R16, 0x70a4, True)
 	GFX_COPY_SRC_HEIGHT = _reg(R16, 0x70a6, True)
