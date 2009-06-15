@@ -27,7 +27,7 @@ SECTIONS
 	.init :
 	{
 		*(.init)
-		. = ALIGN(4);
+		. = ALIGN(64);
 	} >sdram
 
 	.text :
@@ -38,7 +38,7 @@ SECTIONS
 		*(.gnu.linkonce.t*)
 		*(.glue_7)
 		*(.glue_7t)
-		. = ALIGN(4);
+		. = ALIGN(64);
 	} >sdram
 
 	.rodata :
@@ -48,7 +48,7 @@ SECTIONS
 		*(.roda)
 		*(.rodata.*)
 		*(.gnu.linkonce.r*)
-		. = ALIGN(4);
+		. = ALIGN(64);
 	} >sdram
 
 	.data :
@@ -56,8 +56,13 @@ SECTIONS
 		*(.data)
 		*(.data.*)
 		*(.gnu.linkonce.d*)
-		. = ALIGN(4);
+		. = ALIGN(64);
 	} >sdram
+
+	.sploadfailsprobablyduetolibusb :
+	{
+		LONG(0xdefeca7e);
+	} > sdram
 
 	.bss :
 	{
@@ -66,7 +71,7 @@ SECTIONS
 		*(.gnu.linkonce.b*)
 		*(.bss*)
 		*(COMMON)
-		. = ALIGN(4);
+		. = ALIGN(64);
 		__bss_end = . ;
 	} >sdram
 
@@ -86,7 +91,7 @@ SECTIONS
 		. = ALIGN(16);
 		__excstack_addr = .;
 	} >sdram
-	
+
 	.pagetable :
 	{
 		. = ALIGN(16384);
